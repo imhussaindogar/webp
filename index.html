@@ -95,6 +95,12 @@
             text-decoration: underline;
         }
 
+        .image-item p {
+            font-size: 0.8rem;
+            color: #cccccc;
+            margin-top: 5px;
+        }
+
         .download-all {
             display: block;
             width: 100%;
@@ -168,8 +174,8 @@
             for (const file of files) {
                 try {
                     const webpBlob = await convertToWebP(file);
-                    webpFiles.push({ name: file.name.replace(/\.[^/.]+$/, '.webp'), blob: webpBlob });
-                    displayImage(webpBlob, file.name);
+                    webpFiles.push({ name: file.name.replace(/\.[^/.]+$/, '.webp'), blob: webpBlob, originalSize: file.size });
+                    displayImage(webpBlob, file.name, file.size);
                 } catch (error) {
                     console.error('Error converting image:', error);
                 }
@@ -193,14 +199,20 @@
                         } else {
                             reject(new Error('WebP conversion failed'));
                         }
-                    }, 'image/webp', 1.0); // Quality set to 1.0 for lossless
+                    }, 'image/webp', 0.95); // Quality set to 0.95 for near-lossless
                 };
                 img.onerror = () => reject(new Error('Image loading failed'));
                 img.src = URL.createObjectURL(file);
             });
         }
 
-        function displayImage(blob, originalName) {
+        function formatFileSize(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(2) + ' KB';
+            return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+        }
+
+        function displayImage(blob, originalName, originalSize) {
             const webpName = originalName.replace(/\.[^/.]+$/, '.webp');
             const imgUrl = URL.createObjectURL(blob);
 
@@ -216,8 +228,12 @@
             downloadLink.download = webpName;
             downloadLink.textContent = 'Download WebP';
 
+            const sizeInfo = document.createElement('p');
+            sizeInfo.textContent = `Original: ${formatFileSize(originalSize)} | WebP: ${formatFileSize(blob.size)}`;
+
             imageItem.appendChild(img);
             imageItem.appendChild(downloadLink);
+            imageItem.appendChild(sizeInfo);
             imageGrid.appendChild(imageItem);
         }
 
